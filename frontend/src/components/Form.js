@@ -4,19 +4,29 @@ import { ToastContainer, toast } from "react-toastify";
 
 
 export default function Form() {
-    // States for registration
     const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [dob, setDob] = useState("");
     
-    // States for checking the errors
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState(false);
+
+    const [email, setEmail] = useState("");
+    const [emailError, setEmailError] = useState("");
+    const [nameError, setNameError] = useState("");
+    
     
     // Handling the name change
     const handleName = (e) => {
+
+        // console.log(e.keyCode)
         setName(e.target.value);
+        var keyCode = e.keyCode; 
+        if (keyCode >= 48 && keyCode <= 57) {
+          alert("Please enter only alphabets");
+        setName(null);
+          
+        }
         setSubmitted(false);
     };
     
@@ -32,34 +42,28 @@ export default function Form() {
         setSubmitted(false);
     };
     
-     // Handling the password change
-     const handleDob = (e) => {
+    // Handling the password change
+    const handleDob = (e) => {
         setDob(e.target.value);
         setSubmitted(false);
     };
     
-    // Handling the form submission
-    // const handleSubmit = (e) => {
-    //     e.preventDefault();
-    //     if (name === "" || email === "" || password === "" || dob === "") {
-    //         setError(true);
-    //     } else {
-    //         setSubmitted(true);
-    //         setError(false);
-    //     }  
-    // };
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-    
-        if (name === "" || email === "" || password === "" || dob === "") {
-            toast.error("Please enter all the fields", {
-                position: toast.POSITION.TOP_CENTER,
-                autoClose: 3000,
-            });
+        
+        if (name === "" || email === "" || password === "" || dob === "" || name === null || email === null || password === null || dob === null) {
+            setError(true);            
             return;
         }
-    
+        setEmail(email.trim());
+        if (!emailRegex.test(email)) {
+            setEmailError("Please enter a valid email address.");
+        } else {
+            setEmailError(""); // Clear error if email is valid
+        }
+        
         try {
             const response = await fetch("http://localhost/assessment/backend/api.php", {
                 method: "POST",
@@ -68,91 +72,40 @@ export default function Form() {
                 },
                 body: JSON.stringify({ name, email, password, dob }),
             });
-    
-            if (response.ok) {
-
-                alert(response);
-
+            
+            if (response.ok) {                
                 const result = await response.json();
-                alert(result)   
                 if (result.status === "success" || result.id) {
-                    alert("User {name} successfully registered!!");
+                    alert(`User ${name} successfully registered!!`);
                 } else {
-                   alert("Failed to register the user!!");
+                    alert("Failed to register the user!!");
                 }
             } else {
-               alert("Failed to register the user!!");
+                alert("Failed to register the user!!");
             }
         } catch (error) {
-            alert("Failed to register the user!!");
+            alert(nameError||emailError||"Failed to register the user!!");
         }
     };
     
     
-    // Showing success message
-    // const successMessage = () => {
-    //     return (
-    //         // <div
-    //         // className="success"
-    //         // style={{
-    //         //     display: submitted ? "" : "none",
-    //         // }}
-    //         // >
-    //         alert("User {name} successfully registered!!")
-    //         // </div>
-    //     );
-    // };
-    
-    
-    
-    // Showing error message if error is true
-    // const errorMessage = () => {
-    //     return (
-    //         <div
-    //         className="error"
-    //         style={{
-    //             display: error ? "" : "none",
-                
-    //         }}
-            
-    //         >
-            
-    //         <h1>Please enter all the fields</h1>
-            
-    //         </div>
-            
-    //     );
-        
-    // };
-    
     
     
     return (
-        <div className="form">
+        <div> {error || <p style={{ color: "#e29578" }}> Please fill all details </p>}
 
-        {/* Calling to the methods */}
-        
-
-        
-        
-        
-        <form>
-        
-        {/* Labels and inputs for form data */}
-        
+        <div className="form">   
+        <form>      
         <label className="label">Name</label>
-        
         <input
         onChange={handleName}
         className="input"
         value={name}
         type="text"
+        onKeyUp={handleName}
+        onKeyDown={handleName}
         />
-        
-        
-        
         <label className="label">Email</label>
-        
         <input
         onChange={handleEmail}
         className="input"
@@ -161,35 +114,26 @@ export default function Form() {
         />
         
         <label className="label">Password</label>
-        
         <input
         onChange={handlePassword}
         className="input"
         value={password}
         type="password"
         />
-
-    <label className="label">Date of Birth</label>     
+        
+        <label className="label">Date of Birth</label>     
         <input       
         onChange={handleDob}
         className="input"
         value={dob}
         type="date"
         />
-
+        
         <br></br>
         <br></br>
-
-        <button onClick={handleSubmit} className="btn" type="submit">
-        
-        Submit
-        
-        </button>
-        
-
-        
+        <button onClick={handleSubmit} className="btn" type="submit">Submit</button>
         </form>
-        
+        </div>
         </div>
         
     );

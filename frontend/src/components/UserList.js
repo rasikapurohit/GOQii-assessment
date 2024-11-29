@@ -1,31 +1,91 @@
-import  { React, useEffect, useState } from "react";
-import '../css/UserList.css';
-import EditIcon from '@mui/icons-material/Edit';
-import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
-import { Button } from "bootstrap";
+import React, { useEffect, useState } from "react";
+import "../css/UserList.css";
 import axios from "axios";
 
-export default function UserList() {
+export default function UserListTest() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     
-    const [edit, setEdit] = useState(false);
-    const [selectedUserId, setSelectedUserId] = useState(null);
+    const [editingUserId, setEditingUserId] = useState(null);
+    const [editedUserData, setEditedUserData] = useState({});
     const [deleteUser, setDeleteUser] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState(null);
 
-    const handleEdit = (e) => {
-        const id = e.target.id;
-        setSelectedUserId(id);
-        setEdit(true);
-        // console.log(edit)
+    // get all users
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const response = await axios.get("http://localhost/assessment/backend/api.php");
+                setUsers(response.data);
+                setError("");
+            } catch (error) {
+                setError("An error occurred. Please try again later.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUsers();
+    }, []);
+
+    // edit user start
+    const handleEditClick = (user) => {
+        setEditingUserId(user.id); 
+        setEditedUserData({ ...user }); 
     };
 
+    // on Cancel edit
+    const handleCancelEdit = () => {
+        setEditingUserId(null);
+        setEditedUserData({});
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditedUserData((prevData) => ({
+            ...prevData,
+            [name]: value,
+        }));
+    };
+
+    // on Save changes
+    const handleSaveChanges = async () => {
+        try {
+            const response = await axios.put(
+                `http://localhost/assessment/backend/api.php?id=${editingUserId}`,
+                editedUserData
+            );
+            if (response.status === 200) {
+                setUsers((prevUsers) =>
+                    prevUsers.map((user) =>
+                        user.id === editingUserId ? { ...user, ...editedUserData } : user
+                    )
+                );
+                setEditingUserId(null);
+                setEditedUserData({});
+                alert("User details updated successfully!!")
+            }
+        } catch (error) {
+            console.error("Error updating user:", error);
+            setError("Failed to save changes.");
+        }
+    };
+    // end of edit user
+
+     // deleting the user
+     const handleDelete = async (e) => {
+        const id = e.target.id;
+        setSelectedUserId(id);
+        setDeleteUser(true);    
+    }
+
     useEffect(() => {
-        if (edit) {
-            const fetchUserDetails = async () => {
+        if (deleteUser) {
+            const confirm_delete = window.confirm("Are you sure you want to delete this user?");
+            const deleteUserDetails = async () => {
                 try {
-                    const response = await axios.get(
+                    const response = await axios.delete(
                         `http://localhost/assessment/backend/api.php?id=${selectedUserId}`
                     );
                     console.log(response.data); // User details
@@ -33,106 +93,113 @@ export default function UserList() {
                     console.error("Error fetching user details:", error);
                 }
             };
-
-            fetchUserDetails();
-        }
-    }, [edit, selectedUserId]);
-    
-    // const handleEdit = async (e) => {
-
-    //     const id = e.target.id;
-    //     try {
-    //         const response = await axios.get(`http://localhost/assessment/backend/api.php?id=${id}`);
-    //         console.log(response.data); // User details
-    //         setEdit(true); // Update the edit state after fetching data
-    //         console.log(edit)
-    //     } catch (error) {
-    //         console.error("Error fetching user details:", error);
-    //     }
-
-    // }
-
-    useEffect(() => {
-        console.log('use effect run');
-        if(edit){
-            console.log('edit is true');
-        }
-      }, []);
-    
-    const handleDelete = (e) => {
-        console.log(e);
-    }
-    
-    // Fetch users from the backend
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await fetch("http://localhost/assessment/backend/api.php", {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                });
-                
-                // console.log(response);
-                
-                const result = await response.json();
-                if (response.ok && response.status === 200) {
-                    setUsers(result);
-                    setError(""); 
-                } else {
-                    setError(result.message || "Failed to fetch users");
-                }
-            } catch (error) {
-                setError("An error occurred. Please try again later.");
-            } finally {
-                setLoading(false);
+            if (confirm_delete) {
+                deleteUserDetails();
             }
-        };
-        
-        fetchUsers();
-    }, []);
+            
+            
+            deleteUserDetails();
+        }
+    }, [deleteUser, selectedUserId]);
     
+    // end of deleting the user
+
     return (
         <div>
-        {/* Show error message */}
-        {error && <p style={{ color: "#e29578" }}>{error}</p>}
-        
-        {/* Show loading message */}
-        {loading ? (
-            <p>Loading...</p>
-        ) : users.length > 0 ? (
-            // Show table of users
-            <table className="ul_table" >
-            <thead>
-            <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Date of Birth</th>
-            <th>Registered On</th>
-            <th>Edit</th>
-            <th>Delete</th>
-            </tr>
-            </thead>
-            <tbody>
-            {users.map((user) => (
-                <tr key={user.id} id={user.id}>
-                <td>{user.id}</td>
-                <td>{user.name}</td>
-                <td>{user.email}</td>
-                <td>{user.dob}</td>
-                <td>{new Date(user.created_at).toLocaleDateString()}</td>
-                <td> <button type="button" onClick={handleEdit} id={user.id}> Edit </button> </td>
-                <td> <button type="button" onClick={handleDelete}>Del</button> </td>
-                </tr>
-            ))}
-            </tbody>
-            </table>
-        ) : (
-            // Show message if no users are found
-            <p>No users found.</p>
-        )}
+            {error && <p style={{ color: "#e29578" }}>{error}</p>}
+            {loading ? (
+                <p>Loading...</p>
+            ) : users.length > 0 ? (
+                <table className="ul_table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Date of Birth</th>
+                            <th>Registered On</th>
+                            <th>Edit</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {users.map((user) => (
+                            <tr key={user.id}>
+                                <td>{user.id}</td>
+                                <td>
+                                    {editingUserId === user.id ? (
+                                        <input
+                                            type="text"
+                                            name="name"
+                                            value={editedUserData.name || ""}
+                                            onChange={handleInputChange}
+                                        />
+                                    ) : (
+                                        user.name
+                                    )}
+                                </td>
+                                <td>
+                                    {editingUserId === user.id ? (
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={editedUserData.email || ""}
+                                            onChange={handleInputChange}
+                                        />
+                                    ) : (
+                                        user.email
+                                    )}
+                                </td>
+                                <td>
+                                    {editingUserId === user.id ? (
+                                        <input
+                                            type="date"
+                                            name="dob"
+                                            value={editedUserData.dob || ""}
+                                            onChange={handleInputChange}
+                                        />
+                                    ) : (
+                                        user.dob
+                                    )}
+                                </td>
+
+                                <td>{new Date(user.created_at).toLocaleDateString()}</td>
+
+                                <td>
+                                    {editingUserId === user.id ? (
+                                        <div>
+                                            <button
+                                                className="btn btn-success"
+                                                onClick={handleSaveChanges}
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                className="btn btn-secondary"
+                                                onClick={handleCancelEdit}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={() => handleEditClick(user)}
+                                        >
+                                            Edit
+                                        </button>
+                                    )}
+                                </td>
+                                <td>
+                                <button type="button" onClick={handleDelete} id={user.id} > Del </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            ) : (
+                <p>No users found.</p>
+            )}
         </div>
     );
 }
