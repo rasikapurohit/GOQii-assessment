@@ -1,0 +1,16 @@
+.ul_table {
+    width: 100%;
+    border: 2px solid #d3d3d3;
+    color: #edf6f9;
+    padding: 10px;
+}
+
+td, th {
+    padding: 7px;
+    /* text-align: center; */
+}
+
+tr:hover {
+    background-color: aliceblue;
+    color: #1b4965;
+}
